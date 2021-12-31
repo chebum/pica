@@ -37,7 +37,6 @@ const DEFAULT_PICA_OPTS = {
   tile: 1024,
   concurrency,
   features: [ 'js', 'wasm', 'ww' ],
-  idle: 2000,
   createCanvas:  function (width, height) {
     let tmpCanvas = document.createElement('canvas');
     tmpCanvas.width  = width;
@@ -166,7 +165,7 @@ Pica.prototype.init = function () {
         if (singletones[wpool_key]) {
           this.__workersPool = singletones[wpool_key];
         } else {
-          this.__workersPool = new Pool(workerFabric, this.options.idle);
+          this.__workersPool = new Pool(workerFabric);
           singletones[wpool_key] = this.__workersPool;
         }
       } catch (__) {}
@@ -440,10 +439,10 @@ Pica.prototype.__tileAndResize = function (from, to, opts) {
 
     throw new Error('Pica: ".from" should be Image, Canvas or ImageBitmap');
   })
-  .then(() => {
-    if (opts.canceled) return opts.cancelToken;
+    .then(() => {
+      if (opts.canceled) return opts.cancelToken;
 
-    this.debug('Calculate tiles');
+      this.debug('Calculate tiles');
 
     //
     // Here we are with "normalized" source,
@@ -671,6 +670,11 @@ Pica.prototype.resize = function (from, to, options) {
     );
 
     return this.__processStages(stages, from, to, opts);
+  })
+  .finally(() => {
+    if (this.__workersPool) {
+      this.__workersPool.gc();
+    }
   });
 };
 
